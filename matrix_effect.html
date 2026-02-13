@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Effect - Anime Valentine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            position: relative;
+            width: 90vw;
+            max-width: 800px;
+            height: 90vh;
+            max-height: 800px;
+            border: 2px solid #ff1493;
+            box-shadow: 0 0 30px #ff1493, 0 0 60px rgba(255, 20, 147, 0.5);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        #animeImage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .text-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 3;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85), transparent);
+            padding: 20px 20px 40px;
+            text-align: center;
+        }
+
+        .text-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 3;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+            padding: 40px 20px 20px;
+            text-align: center;
+        }
+
+        .valentine-title {
+            font-size: clamp(1.5rem, 5vw, 3rem);
+            color: #ff1493;
+            text-shadow: 
+                0 0 5px #ff1493,
+                0 0 10px rgba(255, 20, 147, 0.6);
+            margin-bottom: 15px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        .valentine-text {
+            font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+            color: #fff;
+            text-shadow: 0 0 5px rgba(255, 20, 147, 0.4);
+            line-height: 1.6;
+            max-width: 90%;
+            margin: 0 auto;
+        }
+
+        /* Интерактивные кнопки */
+        .interactive-buttons {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        .icon-btn {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 20, 147, 0.2);
+            border: 2px solid #ff1493;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            pointer-events: all;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.5);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .icon-btn:hover {
+            transform: scale(1.2) rotate(10deg);
+            background: rgba(255, 20, 147, 0.4);
+            box-shadow: 0 0 25px rgba(255, 20, 147, 0.8);
+        }
+
+        .icon-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Позиции кнопок */
+        .btn-beer {
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            animation-delay: 0s;
+        }
+
+        .btn-wolf {
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            animation-delay: 0.5s;
+        }
+
+        .btn-heart {
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation-delay: 1s;
+        }
+
+        /* Всплывающее окно с цитатой */
+        .quote-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, rgba(255, 20, 147, 0.95), rgba(199, 21, 133, 0.95));
+            padding: 30px;
+            border-radius: 20px;
+            border: 3px solid #ff1493;
+            box-shadow: 
+                0 0 30px rgba(255, 20, 147, 0.8),
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
+            z-index: 10;
+            max-width: 80%;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .quote-popup.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .quote-text {
+            color: #fff;
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            text-align: center;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .quote-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 15px;
+            animation: bounce 1s ease infinite;
+        }
+
+        .close-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #fff;
+            color: #fff;
+            padding: 10px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .close-btn:hover {
+            background: #fff;
+            color: #ff1493;
+            transform: scale(1.05);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 0 15px rgba(255, 20, 147, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 25px rgba(255, 20, 147, 0.9);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 
+                    0 0 5px #ff1493,
+                    0 0 10px rgba(255, 20, 147, 0.6);
+            }
+            to {
+                text-shadow: 
+                    0 0 8px #ff1493,
+                    0 0 15px rgba(255, 20, 147, 0.7),
+                    0 0 20px rgba(255, 105, 180, 0.4);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 95vw;
+                height: 95vh;
+                border-width: 1px;
+            }
+
+            .text-overlay {
+                padding: 15px 15px 30px;
+            }
+
+            .text-bottom {
+                padding: 30px 15px 15px;
+            }
+
+            .icon-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+
+            .btn-beer {
+                left: 10px;
+            }
+
+            .btn-wolf {
+                right: 10px;
+            }
+
+            .btn-heart {
+                bottom: 70px;
+            }
+
+            .quote-popup {
+                padding: 20px;
+                max-width: 90%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .valentine-title {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="canvas"></canvas>
+        <img id="animeImage" src="Valent.png" alt="Anime Character">
+        
+        <div class="text-overlay">
+            <h1 class="valentine-title">♥ Валентинка для самой SEXY волчицы ♥</h1>
+        </div>
+
+        <div class="text-bottom">
+            <p class="valentine-text">
+                Ты делаешь мой мир ярче 💖
+            </p>
+        </div>
+
+        <!-- Интерактивные кнопки -->
+        <div class="interactive-buttons">
+            <div class="icon-btn btn-beer" onclick="showQuote('beer')">🍺</div>
+            <div class="icon-btn btn-wolf" onclick="showQuote('wolf')">🐺</div>
+            <div class="icon-btn btn-heart" onclick="showQuote('heart')">💕</div>
+        </div>
+
+        <!-- Всплывающее окно -->
+        <div class="quote-popup" id="quotePopup">
+            <div class="quote-icon" id="quoteIcon"></div>
+            <div class="quote-text" id="quoteText"></div>
+            <button class="close-btn" onclick="closeQuote()">Закрыть ♥</button>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Базы цитат
+        const quotes = {
+            beer: [
+                "Хочу, чтобы ты смотрела на меня, как на холодное пиво 🍻💕",
+                "Хочу пить пиво с губ... твоего бокала, конечно 😏🍺",
+                "Ты опаснее похмелья, но я рискну 🔥🍻",
+                "Я бы разделил с тобой последнюю бутылку пива 💕",
+                "Ты мой любимый сорт - крепкая и с характером 🍺💕"
+            ],
+            wolf: [
+                "Ты как луна - заставляешь меня выть от желания 🌕🐺",
+                "Волк чувствует добычу... а я чувствую тебя 🔥🐺",
+                "Волчица, которая покорила мое сердце 🐺❤️",
+                "Волк влюбился в овечку 🐺",
+                "Даже волки завидуют твоей харизме! АУУУУ! 🌙🐺"
+            ],
+            heart: [
+                "Хочу быть в твоей стае навсегда, альфа моего сердца 🐺💕",
+                "Даже демон не устоит перед твоей красотой 😈❤️",
+                "Ты мой грех, от которого я не хочу спасения 😈💋",
+                "Твой демонический смех - моя любимая мелодия",
+                "Любовь - это когда твоя улыбка важнее моей 💕✨ "
+            ]
+        };
+
+        function showQuote(type) {
+            const popup = document.getElementById('quotePopup');
+            const quoteText = document.getElementById('quoteText');
+            const quoteIcon = document.getElementById('quoteIcon');
+            
+            // Выбираем случайную цитату
+            const randomQuote = quotes[type][Math.floor(Math.random() * quotes[type].length)];
+            
+            // Устанавливаем иконку
+            const icons = {
+                beer: '🍺',
+                wolf: '🐺',
+                heart: '💕'
+            };
+            
+            quoteIcon.textContent = icons[type];
+            quoteText.textContent = randomQuote;
+            
+            // Показываем попап
+            popup.classList.add('show');
+        }
+
+        function closeQuote() {
+            const popup = document.getElementById('quotePopup');
+            popup.classList.remove('show');
+        }
+
+        // Matrix эффект
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            columns = Math.floor(canvas.width / fontSize);
+            drops.length = 0;
+            for(let i = 0; i < columns; i++) {
+                drops[i] = Math.floor(Math.random() * canvas.height / fontSize);
+            }
+        }
+        
+        const matrixChars = '01♥♡❤10101♥♡❤アイウエオカキクケコサシスセソタチツテト';
+        const fontSize = 14;
+        let columns = 0;
+        const drops = [];
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = fontSize + 'px monospace';
+            
+            for(let i = 0; i < drops.length; i++) {
+                const char = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                const x = i * fontSize;
+                const y = drops[i] * fontSize;
+                const alpha = Math.random() * 0.5 + 0.5;
+                ctx.fillStyle = `rgba(255, 20, 147, ${alpha})`;
+                ctx.fillText(char, x, y);
+                
+                if(y > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        
+        setInterval(draw, 50);
+
+        // Закрытие попапа при клике вне его
+        document.addEventListener('click', function(e) {
+            const popup = document.getElementById('quotePopup');
+            if (popup.classList.contains('show') && !popup.contains(e.target) && !e.target.classList.contains('icon-btn')) {
+                closeQuote();
+            }
+        });
+    </script>
+</body>
+</html>		
